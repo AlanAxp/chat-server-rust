@@ -33,5 +33,6 @@ async fn main() {
         }
         // Haremos uso de AsyncWriteExt para escribir en el buffer
         writer.write_all(line.as_bytes()).await.unwrap()
+        line.clear();
     }
 }
