@@ -1,4 +1,6 @@
-use tokio::{io::{AsyncBufRead, AsyncReadExt, AsyncWriteExt, BufReader}, net::TcpListener, sync::broadcast};
+use tokio::net::{TcpListener};
+use tokio::io::{BufReader, AsyncBufReadExt, AsyncWriteExt};
+
 
 // Funcion que me devuelte el valor por default de T
 fn give_me_default<T>() -> T  where T: Default {
@@ -13,17 +15,23 @@ fn give_me_default<T>() -> T  where T: Default {
 async fn main() {
 
     // Observando el tipo de retorno, impl Future<Output = Result<TcpListener, Error>>
-    let listener = TcpListener::bind("127.0.0.1:8000").await.unwrap();
+    let listener = TcpListener::bind("localhost:8000").await.unwrap();
 
     let (mut socket, _addr) = listener.accept().await.unwrap();
 
-    loop {// Creamos un buffer de 1KB para guardar los mensajes entrantes
-        let mut buffer = [0u8; 1024];
+    let (reader, mut writer) = socket.split();
 
+    let mut reader = BufReader::new(reader);
+    let mut line = String::new();
+
+
+    loop {  
         // Todo lo que llegue al socket lo leemos y lo guardamos en el buffer
-        let bytes_read  = socket.read(&mut buffer).await.unwrap(); // Regresa el numero de bytes 
-
+        let bytes_read  = reader.read_line(&mut line).await.unwrap(); // Regresa el numero de bytes 
+        if bytes_read == 0 {
+            break;
+        }
         // Haremos uso de AsyncWriteExt para escribir en el buffer
-        socket.write_all(&buffer[..bytes_read]).await.unwrap()
+        writer.write_all(line.as_bytes()).await.unwrap()
     }
 }
